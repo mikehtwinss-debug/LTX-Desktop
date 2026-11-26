@@ -14,7 +14,10 @@ interface DecimalFormat {
   grouping?: boolean;
 }
 
-export function formatDecimal(value: MaybeDecimal, { minDecimals, maxDecimals, grouping = true }: DecimalFormat): string {
+export function formatDecimal(
+  value: MaybeDecimal,
+  { minDecimals, maxDecimals, grouping = true }: DecimalFormat,
+): string {
   if (parseDecimal(value) === null) {
     return '';
   }

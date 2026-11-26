@@ -7,6 +7,7 @@ from collections.abc import Callable, Iterator
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.context import COMPANY_HEADER, Ctx, require
@@ -94,6 +95,21 @@ def test_user_without_any_role_is_denied(client_for: Callable[..., TestClient], 
 
 def test_superuser_passes_every_check(scoped_client_for: Callable[..., TestClient], admin: User) -> None:
     assert scoped_client_for(admin).get("/scoped/unknown-permission").status_code == 200
+
+
+def test_superuser_can_administer_before_any_company_exists(
+    client_for: Callable[..., TestClient], db: Session, admin: User
+) -> None:
+    """A fresh installation has only the base seed: no company, yet users must be manageable."""
+    db.execute(update(Company).values(is_active=False))
+    admin_client = client_for(admin, None)
+
+    me = admin_client.get("/api/auth/me")
+    users = admin_client.get("/api/users")
+
+    assert (me.json()["company_id"], me.json()["companies"]) == (None, [])
+    assert "auth.user.manage" in me.json()["permissions"]
+    assert users.status_code == 200
 
 
 def test_company_isolation(client_for: Callable[..., TestClient], db: Session, company: Company) -> None:

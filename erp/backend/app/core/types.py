@@ -28,6 +28,10 @@ def q_price(value: Decimal | int | str) -> Decimal:
     return Decimal(value).quantize(_PRICE_QUANTUM, rounding=ROUND_HALF_UP)
 
 
+def q_rate(value: Decimal | int | str) -> Decimal:
+    return Decimal(value).quantize(_PRICE_QUANTUM, rounding=ROUND_HALF_UP)
+
+
 def enum_type(py_enum: type[enum.Enum]) -> Enum:
     """Column type for an enum stored as its upper-case value in a VARCHAR(32)."""
     return Enum(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     BigInteger,
@@ -34,6 +34,9 @@ from app.core.db import (
     utcnow,
 )
 from app.core.types import Money, Rate, enum_type
+
+if TYPE_CHECKING:
+    from app.modules.auth.models import Role, User
 
 
 class RateType(enum.StrEnum):
@@ -76,6 +79,11 @@ class Company(IdMixin, TimestampMixin, VersionMixin, Base):
     logo: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
     logo_mime: Mapped[str | None] = mapped_column(String(64))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    @property
+    def has_logo(self) -> bool:
+        # Answered from the mime type so that listing companies never loads the deferred image.
+        return self.logo_mime is not None
 
 
 class Plant(IdMixin, TimestampMixin, CompanyMixin, VersionMixin, Base):
@@ -194,6 +202,8 @@ class AuditLog(IdMixin, Base):
     summary: Mapped[str | None] = mapped_column(Text)
     changes: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
+    user: Mapped[User | None] = relationship(foreign_keys=[user_id])
+
 
 class Attachment(IdMixin, TimestampMixin, CompanyMixin, Base):
     __tablename__ = "org_attachment"
@@ -209,6 +219,8 @@ class Attachment(IdMixin, TimestampMixin, CompanyMixin, Base):
     size: Mapped[int] = mapped_column(BigInteger)
     storage_path: Mapped[str] = mapped_column(String(512), unique=True)
     uploaded_by_id: Mapped[int] = ref("auth_user.id")
+
+    uploaded_by: Mapped[User] = relationship(foreign_keys=[uploaded_by_id])
 
 
 class ApprovalRule(IdMixin, TimestampMixin, CompanyMixin, Base):
@@ -230,12 +242,24 @@ class ApprovalRule(IdMixin, TimestampMixin, CompanyMixin, Base):
     approver_user_id: Mapped[int | None] = ref("auth_user.id")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    approver_role: Mapped[Role | None] = relationship(foreign_keys=[approver_role_id])
+    approver_user: Mapped[User | None] = relationship(foreign_keys=[approver_user_id])
+
 
 class ApprovalRequest(IdMixin, TimestampMixin, CompanyMixin, Base):
     __tablename__ = "org_approval_request"
     __table_args__ = (
         Index("ix_org_approval_request_object", "company_id", "object_type", "object_id"),
         Index("ix_org_approval_request_company_id_status", "company_id", "status"),
+        # At most one open request per document, also when two submissions race.
+        Index(
+            "uq_org_approval_request_pending",
+            "company_id",
+            "object_type",
+            "object_id",
+            unique=True,
+            postgresql_where="status = 'PENDING'",
+        ),
         CheckConstraint("amount >= 0", name="amount_non_negative"),
     )
 
@@ -248,6 +272,7 @@ class ApprovalRequest(IdMixin, TimestampMixin, CompanyMixin, Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_level: Mapped[int | None] = mapped_column(Integer)
 
+    requested_by: Mapped[User] = relationship(foreign_keys=[requested_by_id])
     steps: Mapped[list[ApprovalStep]] = relationship(
         back_populates="request",
         foreign_keys="ApprovalStep.request_id",
@@ -272,3 +297,6 @@ class ApprovalStep(IdMixin, TimestampMixin, Base):
     comment: Mapped[str | None] = mapped_column(Text)
 
     request: Mapped[ApprovalRequest] = relationship(back_populates="steps", foreign_keys=[request_id])
+    approver_role: Mapped[Role | None] = relationship(foreign_keys=[approver_role_id])
+    approver_user: Mapped[User | None] = relationship(foreign_keys=[approver_user_id])
+    acted_by: Mapped[User | None] = relationship(foreign_keys=[acted_by_id])

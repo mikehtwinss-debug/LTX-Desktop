@@ -12,22 +12,21 @@ function toDayjs(value: string | null | undefined): Dayjs | undefined {
   return date.isValid() ? date : undefined;
 }
 
-export interface DateInputProps
-  extends Pick<
-    DatePickerProps,
-    | 'id'
-    | 'placeholder'
-    | 'disabled'
-    | 'allowClear'
-    | 'size'
-    | 'status'
-    | 'variant'
-    | 'style'
-    | 'className'
-    | 'autoFocus'
-    | 'onBlur'
-    | 'aria-label'
-  > {
+export interface DateInputProps extends Pick<
+  DatePickerProps,
+  | 'id'
+  | 'placeholder'
+  | 'disabled'
+  | 'allowClear'
+  | 'size'
+  | 'status'
+  | 'variant'
+  | 'style'
+  | 'className'
+  | 'autoFocus'
+  | 'onBlur'
+  | 'aria-label'
+> {
   /** ISO date (`YYYY-MM-DD`) or `null`. */
   value?: string | null;
   onChange?: (value: string | null) => void;

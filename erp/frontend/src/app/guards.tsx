@@ -52,6 +52,16 @@ export function RequireAuth(): ReactNode {
   if (me.must_change_password && location.pathname !== PATHS.changePassword) {
     return <Navigate to={PATHS.changePassword} replace />;
   }
+  if (me.company_id === null && location.pathname !== PATHS.changePassword) {
+    return (
+      <Result
+        status="warning"
+        title="Hesabınıza tanımlı şirket yok"
+        subTitle="Çalışabilmeniz için sistem yöneticinizin size en az bir şirkette rol vermesi gerekiyor."
+        extra={<Button onClick={logout}>Çıkış yap</Button>}
+      />
+    );
+  }
   return <Outlet key={me.company_id} />;
 }
 

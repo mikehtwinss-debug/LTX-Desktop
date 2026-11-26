@@ -31,7 +31,11 @@ export const router = createBrowserRouter([
               {
                 // Errors of a page stay inside the content area; navigation remains usable.
                 errorElement: <RouteErrorBoundary />,
-                children: [{ index: true, element: <HomePage /> }, ...featureRoutes, { path: '*', element: <NotFoundPage /> }],
+                children: [
+                  { index: true, element: <HomePage /> },
+                  ...featureRoutes,
+                  { path: '*', element: <NotFoundPage /> },
+                ],
               },
             ],
           },

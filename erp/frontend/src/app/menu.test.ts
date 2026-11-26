@@ -4,14 +4,44 @@ import { buildMenu, findActiveEntry, requiredPermission } from './menu';
 import { collectFeatures, type FeatureModule, type MenuEntry } from './registry';
 
 const entries: MenuEntry[] = [
-  { key: 'mm.po', label: 'Siparişler', path: '/mm/siparis', group: 'malzeme', section: 'Satınalma', permission: 'mm.po.view', order: 20 },
-  { key: 'mm.pr', label: 'Talepler', path: '/mm/talep', group: 'malzeme', section: 'Satınalma', permission: 'mm.pr.view', order: 10 },
+  {
+    key: 'mm.po',
+    label: 'Siparişler',
+    path: '/mm/siparis',
+    group: 'malzeme',
+    section: 'Satınalma',
+    permission: 'mm.po.view',
+    order: 20,
+  },
+  {
+    key: 'mm.pr',
+    label: 'Talepler',
+    path: '/mm/talep',
+    group: 'malzeme',
+    section: 'Satınalma',
+    permission: 'mm.pr.view',
+    order: 10,
+  },
   { key: 'mm.material', label: 'Malzemeler', path: '/mm/malzeme', group: 'malzeme', order: 1 },
-  { key: 'mm.stock', label: 'Stok Durumu', path: '/mm/stok', group: 'malzeme', section: 'Stok', permission: 'mm.stock.view', order: 5 },
+  {
+    key: 'mm.stock',
+    label: 'Stok Durumu',
+    path: '/mm/stok',
+    group: 'malzeme',
+    section: 'Stok',
+    permission: 'mm.stock.view',
+    order: 5,
+  },
   { key: 'fi.journal', label: 'Yevmiye Fişleri', path: '/fi/fis', group: 'finans', permission: 'fi.journal.view' },
   { key: 'fi.accounts', label: 'Hesap Planı', path: '/fi/hesap', group: 'finans' },
   { key: 'fi.report', label: 'Çek Raporu', path: '/fi/rapor', group: 'finans' },
-  { key: 'org.users', label: 'Kullanıcılar', path: '/yonetim/kullanici', group: 'yonetim', permission: 'auth.user.view' },
+  {
+    key: 'org.users',
+    label: 'Kullanıcılar',
+    path: '/yonetim/kullanici',
+    group: 'yonetim',
+    permission: 'auth.user.view',
+  },
 ];
 
 const allow = (): boolean => true;

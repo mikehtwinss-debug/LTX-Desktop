@@ -10,11 +10,20 @@ const PAGE_SIZE = 25;
 const SEARCH_DELAY_MS = 300;
 const OPTION_STALE_MS = 5 * 60_000;
 
-export interface EntitySelectProps<Item extends { id: number }>
-  extends Pick<
-    SelectProps,
-    'id' | 'placeholder' | 'disabled' | 'allowClear' | 'size' | 'status' | 'variant' | 'style' | 'autoFocus' | 'onBlur'
-  > {
+export interface EntitySelectProps<Item extends { id: number }> extends Pick<
+  SelectProps,
+  | 'id'
+  | 'placeholder'
+  | 'disabled'
+  | 'allowClear'
+  | 'size'
+  | 'status'
+  | 'variant'
+  | 'style'
+  | 'autoFocus'
+  | 'onBlur'
+  | 'aria-label'
+> {
   /** List endpoint relative to `/api`, e.g. `/fi/vendors`. The item itself is read from `<endpoint>/<id>`. */
   endpoint: string;
   value?: number | null;

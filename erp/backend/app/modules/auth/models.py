@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, IdMixin, TimestampMixin, VersionMixin, ref
@@ -25,7 +25,10 @@ class User(IdMixin, TimestampMixin, VersionMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    default_company_id: Mapped[int | None] = ref("org_company.id", ondelete="SET NULL")
+    # Deliberately not a foreign key: every table points at auth_user through its user stamps, so a
+    # constraint from auth_user to org_company would close a cycle that Alembic's autogenerate cannot
+    # order. The value is only a preference; a stale one is ignored when the active company is resolved.
+    default_company_id: Mapped[int | None] = mapped_column(BigInteger)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_login_count: Mapped[int] = mapped_column(Integer, default=0)

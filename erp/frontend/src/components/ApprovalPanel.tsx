@@ -37,9 +37,7 @@ function stepDescription(step: ApprovalStep): ReactNode {
   const { label } = STEP_STATUS[step.status];
   return (
     <>
-      <div>
-        {step.acted_by ? `${label}: ${step.acted_by.full_name} · ${fmtDateTime(step.acted_at)}` : label}
-      </div>
+      <div>{step.acted_by ? `${label}: ${step.acted_by.full_name} · ${fmtDateTime(step.acted_at)}` : label}</div>
       {step.comment && <Typography.Text type="secondary">“{step.comment}”</Typography.Text>}
     </>
   );

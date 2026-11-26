@@ -2,8 +2,10 @@ import { BarcodeOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Input, type InputProps, type InputRef } from 'antd';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 
-export interface BarcodeInputProps
-  extends Pick<InputProps, 'placeholder' | 'disabled' | 'autoFocus' | 'size' | 'style' | 'id' | 'aria-label'> {
+export interface BarcodeInputProps extends Pick<
+  InputProps,
+  'placeholder' | 'disabled' | 'autoFocus' | 'size' | 'style' | 'id' | 'aria-label'
+> {
   /** Called with every code completed by Enter. While a returned promise is pending a spinner is shown. */
   onScan: (code: string) => void | Promise<unknown>;
   /**

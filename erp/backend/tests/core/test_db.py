@@ -15,7 +15,7 @@ from app.core.context import Db, RequestContext
 from app.core.db import assert_version
 from app.core.errors import Conflict, register_exception_handlers
 from app.core.routing import make_router
-from app.modules.auth.models import User
+from app.modules.auth.models import Role, User, UserRole
 from app.modules.co.models import CostCenter
 from app.modules.org.models import Currency
 from tests import factories
@@ -45,6 +45,35 @@ def test_assert_version_rejects_an_outdated_payload(ctx: RequestContext, db: Ses
     assert error.value.code == "STALE_DATA"
     assert error.value.status == 409
     assert error.value.details == {"current_version": 2}
+
+
+def test_accepted_version_advances_even_if_only_child_rows_change(ctx: RequestContext, db: Session) -> None:
+    """Two editors of one document must collide although neither changes a header column."""
+    user = factories.make_user(db)
+    version, updated_at = user.version, user.updated_at
+
+    assert_version(user, version)
+    factories.assign_role(db, user, "depo")  # only a child row is written
+    db.flush()
+
+    assert user.version == version + 1
+    assert user.updated_at > updated_at
+    assert user.updated_by_id == ctx.user.id
+    with pytest.raises(Conflict):
+        assert_version(user, version)
+
+
+def test_child_rows_alone_do_not_rewrite_their_parent(ctx: RequestContext, db: Session) -> None:
+    user = factories.make_user(db)
+    other = factories.make_user(db)
+    version = user.version
+
+    db.info["user_id"] = other.id
+    user.roles.append(UserRole(role_id=db.scalars(select(Role.id).where(Role.code == "depo")).one()))
+    db.flush()
+
+    assert (user.version, user.updated_by_id) == (version, ctx.user.id)
+    assert user.roles[0].created_by_id == other.id
 
 
 def test_stale_update_payload_returns_409(client: TestClient, db: Session) -> None:

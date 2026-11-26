@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { fmtDate, fmtDateTime, fmtFileSize, fmtMoney, fmtPct, fmtPrice, fmtQty, formatDecimal, parseTrNumber } from './format';
+import {
+  fmtDate,
+  fmtDateTime,
+  fmtFileSize,
+  fmtMoney,
+  fmtPct,
+  fmtPrice,
+  fmtQty,
+  formatDecimal,
+  parseTrNumber,
+} from './format';
 
 describe('fmtMoney', () => {
   it('formats with Turkish separators and two decimals', () => {

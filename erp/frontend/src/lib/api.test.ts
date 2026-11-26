@@ -56,7 +56,10 @@ describe('apiErrorFromResponse', () => {
       code: 'FORBIDDEN',
       message: 'Bu işlem için yetkiniz yok.',
     });
-    expect(apiErrorFromResponse(404, { detail: 'Not Found' })).toMatchObject({ code: 'NOT_FOUND', message: 'Kayıt bulunamadı.' });
+    expect(apiErrorFromResponse(404, { detail: 'Not Found' })).toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'Kayıt bulunamadı.',
+    });
     expect(apiErrorFromResponse(401, null).code).toBe('UNAUTHORIZED');
     expect(apiErrorFromResponse(413, '').code).toBe('PAYLOAD_TOO_LARGE');
     expect(apiErrorFromResponse(502, 'Bad Gateway')).toMatchObject({ status: 502, code: 'SERVER_ERROR' });
@@ -136,7 +139,16 @@ describe('errorMessage', () => {
 describe('cleanParams', () => {
   it('drops empty values and keeps meaningful falsy ones', () => {
     expect(
-      cleanParams({ q: '', page: 1, sort: undefined, plant_id: null, is_active: false, level: 0, status: ['A', 'B'], tags: [] }),
+      cleanParams({
+        q: '',
+        page: 1,
+        sort: undefined,
+        plant_id: null,
+        is_active: false,
+        level: 0,
+        status: ['A', 'B'],
+        tags: [],
+      }),
     ).toEqual({ page: 1, is_active: false, level: 0, status: ['A', 'B'] });
   });
 });
@@ -150,12 +162,12 @@ describe('filenameFromDisposition', () => {
 
   it('prefers the RFC 5987 form', () => {
     expect(
-      filenameFromDisposition("attachment; filename=\"siparis.pdf\"; filename*=UTF-8''sipari%C5%9F%20%C3%B6zeti.pdf"),
+      filenameFromDisposition('attachment; filename="siparis.pdf"; filename*=UTF-8\'\'sipari%C5%9F%20%C3%B6zeti.pdf'),
     ).toBe('sipariş özeti.pdf');
   });
 
   it('falls back to the plain form when the encoded one is malformed', () => {
-    expect(filenameFromDisposition("attachment; filename=\"yedek.pdf\"; filename*=UTF-8''%E0%A4%A")).toBe('yedek.pdf');
+    expect(filenameFromDisposition('attachment; filename="yedek.pdf"; filename*=UTF-8\'\'%E0%A4%A')).toBe('yedek.pdf');
   });
 
   it('returns null without a filename', () => {

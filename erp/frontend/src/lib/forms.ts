@@ -12,50 +12,22 @@ export interface FieldIssue {
 /** Cell errors of a line grid: row index → column field → message (`LinesEditor` `errors` prop). */
 export type LineErrors = Record<number, Record<string, string>>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function toPath(raw: unknown): FieldPath | null {
-  const parts: unknown[] | null = typeof raw === 'string' ? raw.split('.') : Array.isArray(raw) ? raw : null;
-  if (parts === null) {
-    return null;
-  }
-  const path = parts
-    .filter((part): part is string | number => typeof part === 'string' || typeof part === 'number')
-    .map((part) => (typeof part === 'string' && /^\d+$/.test(part) ? Number(part) : part));
-  // Pydantic locations of request bodies start with "body".
-  if (path.length > 1 && path[0] === 'body') {
-    path.shift();
-  }
-  return path.length > 0 ? path : null;
-}
-
-function toMessages(raw: unknown): string[] {
-  const values = Array.isArray(raw) ? raw : [raw];
-  return values.filter((value): value is string => typeof value === 'string' && value !== '');
+function toPath(key: string): FieldPath {
+  return key.split('.').map((part) => (/^\d+$/.test(part) ? Number(part) : part));
 }
 
 /**
- * Reads `details.fields` of a validation error. Both representations of field errors are
- * understood: a map (`{"lines.0.quantity": "..."}`, values may be lists) and a list of
- * `{field | loc, message | msg}` objects.
+ * Field errors of a failed request: `details.fields` maps dotted paths to messages,
+ * e.g. `{"vendor_id": "Bu alan zorunludur", "lines.0.quantity": "0 değerinden büyük olmalıdır"}`.
  */
 export function fieldIssues(error: unknown): FieldIssue[] {
   const fields = error instanceof ApiError ? error.details?.fields : undefined;
-  const issues: FieldIssue[] = [];
-  const add = (rawPath: unknown, rawMessages: unknown): void => {
-    const path = toPath(rawPath);
-    if (path !== null) {
-      toMessages(rawMessages).forEach((message) => issues.push({ path, message }));
-    }
-  };
-  if (Array.isArray(fields)) {
-    fields.filter(isRecord).forEach((item) => add(item.field ?? item.loc, item.message ?? item.msg));
-  } else if (isRecord(fields)) {
-    Object.entries(fields).forEach(([key, value]) => add(key, value));
+  if (typeof fields !== 'object' || fields === null) {
+    return [];
   }
-  return issues;
+  return Object.entries(fields).flatMap(([key, message]) =>
+    typeof message === 'string' && message !== '' ? [{ path: toPath(key), message }] : [],
+  );
 }
 
 function startsWith(path: FieldPath, prefix: FieldPath): boolean {

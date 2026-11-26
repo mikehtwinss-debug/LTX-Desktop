@@ -75,7 +75,17 @@ def engine(app: FastAPI) -> Iterator[Engine]:
     finally:
         engine.dispose()
         with server.connect() as connection:
-            connection.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DATABASE}" WITH (FORCE)'))
+            # Close whatever a test left connected under our role. DROP ... WITH (FORCE) is not an
+            # option: it also tries to terminate autovacuum workers, which an ordinary role may not do,
+            # whereas a plain DROP DATABASE waits for them by itself.
+            connection.execute(
+                text(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = :name AND usename = current_user AND pid <> pg_backend_pid()"
+                ),
+                {"name": TEST_DATABASE},
+            )
+            connection.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DATABASE}"'))
         server.dispose()
         shutil.rmtree(_storage_dir, ignore_errors=True)
 

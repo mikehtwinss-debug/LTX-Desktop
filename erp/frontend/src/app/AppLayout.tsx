@@ -12,7 +12,22 @@ import {
   ShopOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { App, Badge, Button, Dropdown, Flex, Layout, Menu, type MenuProps, Select, Spin, theme, Tooltip, Typography } from 'antd';
+import {
+  App,
+  Badge,
+  Button,
+  Dropdown,
+  Flex,
+  Grid,
+  Layout,
+  Menu,
+  type MenuProps,
+  Select,
+  Spin,
+  theme,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { type ReactNode, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -63,6 +78,7 @@ export function AppLayout(): ReactNode {
   const { logout, switchCompany } = useAuth();
   const { token } = theme.useToken();
   const { message } = App.useApp();
+  const screens = Grid.useBreakpoint();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const inbox = useApprovalInbox();
@@ -118,7 +134,7 @@ export function AppLayout(): ReactNode {
 
   const userMenu: MenuProps = {
     items: [
-      { key: 'password', icon: <KeyOutlined />, label: 'Şifre değiştir' },
+      { key: 'password', icon: <KeyOutlined />, label: 'Parola değiştir' },
       { type: 'divider' },
       { key: 'logout', icon: <LogoutOutlined />, label: 'Çıkış yap' },
     ],
@@ -165,7 +181,7 @@ export function AppLayout(): ReactNode {
         />
       </Layout.Sider>
 
-      <Layout>
+      <Layout style={{ minWidth: 0 }}>
         <Layout.Header
           style={{
             position: 'sticky',
@@ -184,21 +200,22 @@ export function AppLayout(): ReactNode {
             aria-label={collapsed ? 'Menüyü genişlet' : 'Menüyü daralt'}
             onClick={() => toggleCollapsed(!collapsed)}
           />
-          <Flex align="center" gap={4}>
+          <Flex align="center" gap={4} style={{ minWidth: 0 }}>
             {me.companies.length > 1 ? (
               <Select<number>
                 variant="borderless"
                 prefix={<ShopOutlined />}
                 aria-label="Şirket"
-                value={me.company_id}
+                value={me.company_id ?? undefined}
                 loading={switching}
                 disabled={switching}
                 popupMatchSelectWidth={false}
+                style={{ minWidth: 0, maxWidth: 320 }}
                 options={me.companies.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }))}
                 onChange={(companyId) => void handleCompanyChange(companyId)}
               />
             ) : (
-              <Typography.Text style={{ paddingInline: 8 }}>
+              <Typography.Text ellipsis style={{ paddingInline: 8 }}>
                 <ShopOutlined /> {company ? `${company.code} · ${company.name}` : ''}
               </Typography.Text>
             )}
@@ -213,8 +230,8 @@ export function AppLayout(): ReactNode {
               </Badge>
             </Tooltip>
             <Dropdown menu={userMenu} trigger={['click']}>
-              <Button type="text" icon={<UserOutlined />}>
-                {me.full_name}
+              <Button type="text" icon={<UserOutlined />} aria-label={`Kullanıcı menüsü: ${me.full_name}`}>
+                {screens.md && me.full_name}
                 <DownOutlined style={{ fontSize: 10 }} />
               </Button>
             </Dropdown>

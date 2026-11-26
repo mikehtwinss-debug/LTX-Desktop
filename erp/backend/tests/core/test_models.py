@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import CheckConstraint, Engine, inspect, text
 from sqlalchemy.orm import RelationshipProperty, configure_mappers
+from sqlalchemy.sql.ddl import sort_tables_and_constraints
 
 from app.core.db import Base
 
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 DOCUMENTED_TABLES = {
     "auth_user", "auth_role", "auth_permission", "auth_role_permission", "auth_user_role",
     "org_company", "org_plant", "org_warehouse", "org_purchasing_group", "org_currency",
@@ -131,6 +137,20 @@ def test_every_foreign_key_declares_its_delete_rule() -> None:
                 assert not foreign_key.parent.nullable, foreign_key
 
 
+def test_tables_can_be_created_in_dependency_order() -> None:
+    """Alembic's autogenerate cannot order mutually dependent tables, so the model must not have any
+    foreign-key cycle (self-references are fine)."""
+    ordered = sort_tables_and_constraints(Base.metadata.tables.values())
+
+    deferred = [constraint for table, constraints in ordered if table is None for constraint in constraints]
+    assert deferred == []
+    position = {table.name: index for index, (table, _) in enumerate(ordered) if table is not None}
+    for table in Base.metadata.tables.values():
+        for foreign_key in table.foreign_keys:
+            if foreign_key.column.table is not table:
+                assert position[foreign_key.column.table.name] < position[table.name], foreign_key
+
+
 def test_line_collections_are_ordered_by_line_no() -> None:
     checked = 0
     for mapper in Base.registry.mappers:
@@ -185,3 +205,16 @@ def test_database_schema_matches_the_metadata(engine: Engine) -> None:
         "ix_fi_journal_line_customer_open",
     } <= partial_indexes
     assert not_valid == 0
+
+
+def test_alembic_environment_sees_no_drift(engine: Engine) -> None:
+    """Runs the real alembic.ini / env.py against the test database: autogenerate must find nothing
+    to do for a schema built by `create_all`, i.e. every construct reflects the way it is declared."""
+    config = Config(str(BACKEND_DIR / "alembic.ini"))
+
+    try:
+        command.check(config)  # raises CommandError when it detects pending operations
+    finally:
+        # The check leaves Alembic's bookkeeping table behind; other tests expect a pristine schema.
+        with engine.begin() as connection:
+            connection.execute(text("DROP TABLE IF EXISTS alembic_version"))

@@ -17,6 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { errorMessage, getList, type QueryParams } from '@/lib/api';
 import { queryKeys } from '@/lib/queryClient';
+
 import { DateInput } from './DateInput';
 import { EntitySelect } from './EntitySelect';
 import {
@@ -70,8 +71,8 @@ export type ServerTableFilter =
   | (FilterCommon & { type: 'select'; options: { value: string; label: string }[]; multiple?: boolean })
   | (FilterCommon & { type: 'boolean' })
   | (FilterCommon & { type: 'date' })
-  /** Two parameters: `name` receives the start date and `toName` the end date. */
-  | (FilterCommon & { type: 'dateRange'; toName: string })
+  /** Range over the date field `name`; sets the parameters `<name>_from` and `<name>_to`. */
+  | (FilterCommon & { type: 'dateRange' })
   | (FilterCommon & {
       type: 'entity';
       endpoint: string;
@@ -130,11 +131,17 @@ const BOOLEAN_OPTIONS = [
   { value: 'false', label: 'Hayır' },
 ];
 
+function rangeNames(name: string): [string, string] {
+  return [`${name}_from`, `${name}_to`];
+}
+
 function isComputed<Row>(column: ServerTableColumn<Row>): column is ComputedColumn<Row> {
   return column.dataIndex === undefined;
 }
 
-function useTableState(urlState: boolean, config: TableStateConfig): [TableState, (patch: Partial<TableState>) => void] {
+type UpdateTableState = (patch: Partial<TableState>) => void;
+
+function useTableState(urlState: boolean, config: TableStateConfig): [TableState, UpdateTableState] {
   const [searchParams, setSearchParams] = useSearchParams();
   const [localState, setLocalState] = useState(() => initialTableState(config));
   const state = urlState ? readTableState(searchParams, config) : localState;
@@ -259,8 +266,9 @@ function FilterControl({ filter, filters, onChange }: FilterControlProps): React
         />
       );
     case 'dateRange': {
-      const from = single(value);
-      const to = single(filters[filter.toName]);
+      const [fromName, toName] = rangeNames(filter.name);
+      const from = single(filters[fromName]);
+      const to = single(filters[toName]);
       return (
         <DatePicker.RangePicker
           allowEmpty={[true, true]}
@@ -270,8 +278,8 @@ function FilterControl({ filter, filters, onChange }: FilterControlProps): React
           style={{ width: filter.width ?? 300 }}
           onChange={(range) =>
             onChange({
-              [filter.name]: range?.[0]?.format(ISO_DATE),
-              [filter.toName]: range?.[1]?.format(ISO_DATE),
+              [fromName]: range?.[0]?.format(ISO_DATE),
+              [toName]: range?.[1]?.format(ISO_DATE),
             })
           }
         />
@@ -307,7 +315,10 @@ function FilterControl({ filter, filters, onChange }: FilterControlProps): React
  *       { dataIndex: 'gross_total', title: 'Tutar', align: 'right', render: (value, row) => fmtMoney(value, row.currency_code) },
  *       { key: 'actions', title: '', render: (row) => <DownloadButton url={`/mm/purchase-orders/${row.id}/pdf`} format="pdf" /> },
  *     ]}
- *     filters={[{ type: 'select', name: 'status', label: 'Durum', options: statusOptions }]}
+ *     filters={[
+ *       { type: 'select', name: 'status', label: 'Durum', options: statusOptions, multiple: true },
+ *       { type: 'dateRange', name: 'order_date', label: 'Sipariş tarihi' },
+ *     ]}
  *     toolbar={<Button type="primary">Yeni sipariş</Button>}
  *     onRowClick={(row) => navigate(`/mm/siparis/${row.id}`)}
  *   />
@@ -331,9 +342,12 @@ export function ServerTable<Row extends object>({
   urlPrefix = '',
   tableProps,
 }: ServerTableProps<Row>): ReactNode {
-  const filterNames = filters.flatMap((filter) => (filter.type === 'dateRange' ? [filter.name, filter.toName] : [filter.name]));
-  const multiValued = filters.flatMap((filter) => (filter.type === 'select' && filter.multiple ? [filter.name] : []));
-  const [state, update] = useTableState(urlState, { prefix: urlPrefix, defaultPageSize, filterNames, multiValued });
+  const [state, update] = useTableState(urlState, {
+    prefix: urlPrefix,
+    defaultPageSize,
+    filterNames: filters.flatMap((filter) => (filter.type === 'dateRange' ? rangeNames(filter.name) : [filter.name])),
+    multiValued: filters.flatMap((filter) => (filter.type === 'select' && filter.multiple ? [filter.name] : [])),
+  });
 
   const [searchText, setSearchText] = useState(state.q);
   const searchTimer = useRef<number>();
@@ -429,6 +443,7 @@ export function ServerTable<Row extends object>({
   const hasCriteria = state.q !== '' || Object.keys(state.filters).length > 0;
   const clearCriteria = (): void => {
     window.clearTimeout(searchTimer.current);
+    setSearchText('');
     update({ q: '', filters: {}, page: 1 });
   };
 
@@ -531,8 +546,7 @@ export function ServerTable<Row extends object>({
           }
         }
         onRow={
-          onRowClick &&
-          ((row) => ({ onClick: (event) => handleRowClick(row, event), style: { cursor: 'pointer' } }))
+          onRowClick && ((row) => ({ onClick: (event) => handleRowClick(row, event), style: { cursor: 'pointer' } }))
         }
         onChange={handleTableChange}
       />

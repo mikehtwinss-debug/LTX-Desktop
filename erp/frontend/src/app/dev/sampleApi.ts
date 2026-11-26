@@ -59,7 +59,10 @@ const materials: SampleMaterial[] = Array.from({ length: 137 }, (_, index) => {
     material_type: TYPES[index % TYPES.length] ?? 'HAMMADDE',
     uom,
     uom_decimals: uomDecimals,
-    stock_qty: uomDecimals === 0 ? `${(index * 37) % 500}.000` : `${(index * 37) % 500}.${String((index * 125) % 1000).padStart(3, '0')}`,
+    stock_qty:
+      uomDecimals === 0
+        ? `${(index * 37) % 500}.000`
+        : `${(index * 37) % 500}.${String((index * 125) % 1000).padStart(3, '0')}`,
     price: `${(index * 173) % 9000}.${String((index * 7919) % 1000000).padStart(6, '0')}`,
     tax_rate: index % 7 === 0 ? '10.0000' : '20.0000',
     is_active: index % 9 !== 0,
@@ -179,8 +182,8 @@ function listMaterials(params: Params): ListResult<SampleMaterial> {
   const types = [params.material_type].flat().map(text).filter(Boolean);
   const active = text(params.is_active);
   const code = text(params.code).toLocaleLowerCase('tr');
-  const from = text(params.created_from);
-  const to = text(params.created_to);
+  const from = text(params.created_at_from);
+  const to = text(params.created_at_to);
   const rows = materials.filter(
     (row) =>
       (q === '' || `${row.code} ${row.name}`.toLocaleLowerCase('tr').includes(q)) &&
@@ -332,7 +335,15 @@ function settle(config: InternalAxiosRequestConfig, reply: Reply): Promise<Axios
       if (reply.status < 400) {
         resolve(response);
       } else {
-        reject(new AxiosError(`Request failed with status code ${reply.status}`, AxiosError.ERR_BAD_RESPONSE, config, null, response));
+        reject(
+          new AxiosError(
+            `Request failed with status code ${reply.status}`,
+            AxiosError.ERR_BAD_RESPONSE,
+            config,
+            null,
+            response,
+          ),
+        );
       }
     }, LATENCY_MS);
   });

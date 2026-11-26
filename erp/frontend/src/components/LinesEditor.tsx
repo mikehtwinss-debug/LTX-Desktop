@@ -172,7 +172,11 @@ function CellInner<Row>({ column, row, index, editable, error, onPatch }: CellPr
   const value = (row as Record<string, unknown>)[field];
   const text = typeof value === 'string' ? value : null;
   const set = (next: unknown): void => onPatch(index, { [field]: next } as Partial<Row>);
-  const shared = { variant: 'borderless', status: error ? 'error' : undefined } as const;
+  const shared = {
+    variant: 'borderless',
+    status: error ? 'error' : undefined,
+    'aria-label': typeof column.title === 'string' ? `${column.title}, ${index + 1}. satır` : undefined,
+  } as const;
   let editor: ReactNode;
 
   if (column.editor === 'entity') {
@@ -256,7 +260,7 @@ function CellInner<Row>({ column, row, index, editable, error, onPatch }: CellPr
   // The message of a marked cell appears on hover and while the cell has the focus.
   return error ? (
     <Tooltip title={error} placement="topLeft" trigger={['hover', 'focus']}>
-      <div aria-invalid>{editor}</div>
+      <div>{editor}</div>
     </Tooltip>
   ) : (
     editor
@@ -353,7 +357,10 @@ export function LinesEditor<Row extends object>({
       const current = latest.current.rows;
       const target = current[index];
       if (target !== undefined) {
-        emit(current.map((row, position) => (position === index ? { ...target, ...patch } : row)), keys.current);
+        emit(
+          current.map((row, position) => (position === index ? { ...target, ...patch } : row)),
+          keys.current,
+        );
       }
     },
     [emit],
@@ -361,15 +368,17 @@ export function LinesEditor<Row extends object>({
 
   const insertRow = (index: number, row: Row): void => {
     pendingFocus.current = index;
-    emit([...rows.slice(0, index), row, ...rows.slice(index)], [
-      ...keys.current.slice(0, index),
-      nextKey.current++,
-      ...keys.current.slice(index),
-    ]);
+    emit(
+      [...rows.slice(0, index), row, ...rows.slice(index)],
+      [...keys.current.slice(0, index), nextKey.current++, ...keys.current.slice(index)],
+    );
   };
 
   const removeRow = (index: number): void => {
-    emit(rows.filter((_, position) => position !== index), keys.current.filter((_, position) => position !== index));
+    emit(
+      rows.filter((_, position) => position !== index),
+      keys.current.filter((_, position) => position !== index),
+    );
   };
 
   const focusCell = (position: CellPosition): boolean => {
@@ -387,8 +396,7 @@ export function LinesEditor<Row extends object>({
     return true;
   };
 
-  const focusFirstCell = (row: number): boolean =>
-    columns.some((_, column) => focusCell({ row, column }));
+  const focusFirstCell = (row: number): boolean => columns.some((_, column) => focusCell({ row, column }));
 
   // A row added by the user receives the focus once it has been rendered.
   useLayoutEffect(() => {
@@ -478,9 +486,13 @@ export function LinesEditor<Row extends object>({
 
   const editable = !disabled;
   const showActions = editable && (allowDuplicate || allowRemove);
-  const actionsWidth = showActions ? (allowDuplicate ? ACTION_BUTTON_WIDTH : 0) + (allowRemove ? ACTION_BUTTON_WIDTH : 0) + 8 : 0;
+  const actionsWidth = showActions
+    ? (allowDuplicate ? ACTION_BUTTON_WIDTH : 0) + (allowRemove ? ACTION_BUTTON_WIDTH : 0) + 8
+    : 0;
   const totalWidth =
-    INDEX_COLUMN_WIDTH + actionsWidth + columns.reduce((total, column) => total + (column.width ?? DEFAULT_COLUMN_WIDTH), 0);
+    INDEX_COLUMN_WIDTH +
+    actionsWidth +
+    columns.reduce((total, column) => total + (column.width ?? DEFAULT_COLUMN_WIDTH), 0);
   const tableColumns: ColumnsType<GridRow<Row>> = [
     {
       key: '#',

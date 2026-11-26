@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import Engine, delete, text, update
+from sqlalchemy import Engine, delete, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -81,8 +81,8 @@ def _journal_entry(ctx: RequestContext, number: str = "2600000001") -> JournalEn
 def _material_document(ctx: RequestContext, number: str = "MB260000001") -> MaterialDocument:
     db = ctx.db
     material = factories.make_material(db)
-    plant = db.query(Plant).filter_by(company_id=ctx.company_id).one()
-    warehouse = db.query(Warehouse).filter_by(company_id=ctx.company_id).one()
+    plant = db.scalars(select(Plant).where(Plant.company_id == ctx.company_id)).one()
+    warehouse = db.scalars(select(Warehouse).where(Warehouse.company_id == ctx.company_id)).one()
     document = MaterialDocument(
         company_id=ctx.company_id,
         number=number,
@@ -100,7 +100,7 @@ def _material_document(ctx: RequestContext, number: str = "MB260000001") -> Mate
                 quantity=Decimal("10"),
                 direction=1,
                 entry_quantity=Decimal("10"),
-                entry_uom_id=db.query(Uom).filter_by(code="ADET").one().id,
+                entry_uom_id=db.scalars(select(Uom.id).where(Uom.code == "ADET")).one(),
                 amount_local=Decimal("250.00"),
             )
         ],
@@ -148,14 +148,13 @@ def test_trigger_definitions_cover_the_documented_whitelist() -> None:
 
 def test_create_all_installed_every_trigger(engine: Engine) -> None:
     with engine.connect() as connection:
-        triggers = set(
-            connection.execute(
-                text(
-                    "SELECT c.relname, t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
-                    "WHERE NOT t.tgisinternal"
-                )
-            ).tuples()
+        rows = connection.execute(
+            text(
+                "SELECT c.relname, t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                "WHERE NOT t.tgisinternal"
+            )
         )
+        triggers = {(table, trigger) for table, trigger in rows}
 
     assert triggers == {
         (table, f"trg_{table}_{suffix}") for table in guarded_tables() for suffix in ("guard", "no_truncate")

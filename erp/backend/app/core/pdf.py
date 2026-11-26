@@ -264,6 +264,12 @@ class PdfBuilder:
     def _paragraph(self, text: Any, **style: Any) -> Paragraph:
         return Paragraph(_markup(text), self._style(**style))
 
+    def _table(self, data: list[list[Any]], style: Sequence[tuple[Any, ...]], **options: Any) -> Table:
+        table = Table(data, **options)
+        # Plain-string cells (the fillers of spans) would otherwise pull in ReportLab's default Helvetica.
+        table.setStyle([("FONT", (0, 0), (-1, -1), FONT, self._font_size), *style])
+        return table
+
     def spacer(self, height_mm: float = 4) -> Self:
         self._story.append(Spacer(1, height_mm * mm))
         return self
@@ -296,22 +302,21 @@ class PdfBuilder:
         )
         lines.extend(self._paragraph(line, size=small) for line in (tax, contact) if line)
 
+        row: list[Any] = [lines]
+        widths = [self.content_width]
         if letterhead.logo:
             logo = self._logo(letterhead.logo, logo_box_mm)
             logo_width = logo.drawWidth + 4 * mm
-            table = Table([[logo, lines]], colWidths=[logo_width, self.content_width - logo_width])
-        else:
-            table = Table([[lines]], colWidths=[self.content_width])
-        table.setStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ]
-        )
-        self._story.append(table)
+            row = [logo, lines]
+            widths = [logo_width, self.content_width - logo_width]
+        style = [
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ]
+        self._story.append(self._table([row], style, colWidths=widths))
         self._story.append(
             HRFlowable(width="100%", thickness=0.8, color=_LINE_COLOR, spaceBefore=3, spaceAfter=6)
         )
@@ -349,16 +354,13 @@ class PdfBuilder:
             row.extend([""] * (2 * columns - len(row)))
             rows.append(row)
         if rows:
-            table = Table(rows, colWidths=[label_width, value_width] * columns)
-            table.setStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("TOPPADDING", (0, 0), (-1, -1), 1),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ]
-            )
-            self._story.append(table)
+            style = [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ]
+            self._story.append(self._table(rows, style, colWidths=[label_width, value_width] * columns))
             self._story.append(Spacer(1, 4 * mm))
         return self
 
@@ -450,9 +452,8 @@ class PdfBuilder:
         ]
         if zebra and len(data) > header_count:
             style.append(("ROWBACKGROUNDS", (0, header_count), (-1, -1), [colors.white, _ZEBRA_BACKGROUND]))
-        table = Table(data, colWidths=self._column_widths(columns), repeatRows=header_count)
-        table.setStyle(style + commands)
-        self._story.append(table)
+        widths = self._column_widths(columns)
+        self._story.append(self._table(data, style + commands, colWidths=widths, repeatRows=header_count))
         self._story.append(Spacer(1, 3 * mm))
         return self
 
@@ -467,7 +468,6 @@ class PdfBuilder:
         for index, (label, value) in enumerate(rows):
             bold = emphasize_last and index == len(rows) - 1
             data.append([self._paragraph(label, bold=bold), self._paragraph(value, bold=bold, align="right")])
-        table = Table(data, colWidths=[width * 0.55, width * 0.45], hAlign="RIGHT")
         style: list[tuple[Any, ...]] = [
             ("GRID", (0, 0), (-1, -1), 0.4, _LINE_COLOR),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -476,7 +476,7 @@ class PdfBuilder:
         ]
         if emphasize_last:
             style.append(("BACKGROUND", (0, -1), (-1, -1), _HEADER_BACKGROUND))
-        table.setStyle(style)
+        table = self._table(data, style, colWidths=[width * 0.55, width * 0.45], hAlign="RIGHT")
         self._story.append(KeepTogether([table, Spacer(1, 4 * mm)]))
         return self
 
@@ -511,7 +511,6 @@ class PdfBuilder:
             parts = [self._paragraph(block.heading, bold=True)] if block.heading else []
             parts.append(self._paragraph(block.body))
             cells.append(parts)
-        table = Table([cells], colWidths=[self.content_width / len(blocks)] * len(blocks))
         style: list[tuple[Any, ...]] = [
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("TOPPADDING", (0, 0), (-1, -1), 3),
@@ -521,8 +520,8 @@ class PdfBuilder:
             style.append(("GRID", (0, 0), (-1, -1), 0.4, _LINE_COLOR))
         else:
             style.append(("LEFTPADDING", (0, 0), (-1, -1), 0))
-        table.setStyle(style)
-        self._story.append(table)
+        widths = [self.content_width / len(blocks)] * len(blocks)
+        self._story.append(self._table([cells], style, colWidths=widths))
         self._story.append(Spacer(1, 4 * mm))
         return self
 
@@ -540,11 +539,6 @@ class PdfBuilder:
             or ""
             for signer in signers
         ]
-        table = Table(
-            [titles, [""] * len(signers), names],
-            colWidths=[self.content_width / len(signers)] * len(signers),
-            rowHeights=[None, space_mm * mm, None],
-        )
         style: list[tuple[Any, ...]] = [
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("TOPPADDING", (0, 0), (-1, -1), 3),
@@ -555,6 +549,12 @@ class PdfBuilder:
             style.append(("BOX", (0, 0), (-1, -1), 0.4, _LINE_COLOR))
             style.append(("LINEBEFORE", (1, 1), (-1, -1), 0.4, _LINE_COLOR))
             style.append(("BACKGROUND", (0, 0), (-1, 0), _HEADER_BACKGROUND))
+        table = self._table(
+            [titles, [""] * len(signers), names],
+            style,
+            colWidths=[self.content_width / len(signers)] * len(signers),
+            rowHeights=[None, space_mm * mm, None],
+        )
         self._story.append(KeepTogether([Spacer(1, 4 * mm), table]))
         return self
 
@@ -564,7 +564,7 @@ class PdfBuilder:
         width, height = self._page_size
         canvas.saveState()
         canvas.setFillColor(_WATERMARK_COLOR)
-        canvas.setFillAlpha(0.28)
+        canvas.setFillAlpha(0.22)
         canvas.setFont(FONT_BOLD, min(width, height) / max(len(self._watermark), 4) * 1.1)
         canvas.translate(width / 2, height / 2)
         canvas.rotate(35)
@@ -586,6 +586,8 @@ class PdfBuilder:
             bottomMargin=self._margin + _FOOTER_HEIGHT,
             title=self._document_title,
             author="ERP",
+            # Otherwise every page would reference the non-embedded standard font Helvetica.
+            initialFontName=FONT,
         )
         document.build(
             self._story or [Spacer(1, 1)],

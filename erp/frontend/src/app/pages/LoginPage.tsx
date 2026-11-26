@@ -52,10 +52,14 @@ export function LoginPage(): ReactNode {
         <Typography.Paragraph type="secondary">Devam etmek için oturum açın.</Typography.Paragraph>
         {error !== null && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}
         <Form<LoginForm> layout="vertical" requiredMark={false} onFinish={(values) => void handleFinish(values)}>
-          <Form.Item name="username" label="Kullanıcı adı" rules={[{ required: true, message: 'Kullanıcı adınızı girin' }]}>
+          <Form.Item
+            name="username"
+            label="Kullanıcı adı"
+            rules={[{ required: true, message: 'Kullanıcı adınızı girin' }]}
+          >
             <Input autoFocus autoComplete="username" autoCapitalize="none" prefix={<UserOutlined />} />
           </Form.Item>
-          <Form.Item name="password" label="Şifre" rules={[{ required: true, message: 'Şifrenizi girin' }]}>
+          <Form.Item name="password" label="Parola" rules={[{ required: true, message: 'Parolanızı girin' }]}>
             <Input.Password autoComplete="current-password" prefix={<LockOutlined />} />
           </Form.Item>
           <Button type="primary" htmlType="submit" block loading={submitting}>

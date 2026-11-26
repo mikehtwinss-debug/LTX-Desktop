@@ -24,14 +24,17 @@ export default defineConfig(({ mode }) => {
     server: { port, strictPort: true, proxy },
     preview: { port, strictPort: true, proxy },
     build: {
+      // The Ant Design chunk is one deliberately large, long-cached file.
+      chunkSizeWarningLimit: 1200,
       rolldownOptions: {
         output: {
-          // Keep the UI kit and the framework out of the entry chunk so application releases do not
-          // invalidate their long-lived browser cache entries.
+          // Keep the UI kit and the framework out of the entry chunk so that application releases do
+          // not invalidate their browser cache entries. A group also takes the dependencies of its
+          // modules, hence the order: React first, then Ant Design (which depends on it), then the rest.
           codeSplitting: {
             groups: [
-              { name: 'antd', test: ANTD_PACKAGES, priority: 30 },
-              { name: 'react', test: REACT_PACKAGES, priority: 20 },
+              { name: 'react', test: REACT_PACKAGES, priority: 30 },
+              { name: 'antd', test: ANTD_PACKAGES, priority: 20 },
               { name: 'vendor', test: /node_modules[\\/]/, priority: 10 },
             ],
           },

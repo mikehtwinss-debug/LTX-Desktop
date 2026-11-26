@@ -94,13 +94,21 @@ class VersionMixin:
 
 
 def assert_version(obj: VersionMixin, version: int) -> None:
-    """Reject an update that was prepared against an older version of the row."""
+    """Reject an update that was prepared against an older version of the row.
+
+    On success the row is also marked as changed, so its version advances with the next flush even
+    when the update only touches child rows (the lines of a document). Without that, two users
+    editing different lines of the same document would silently overwrite each other. Call it right
+    before applying the changes: a query in between autoflushes the mark as an UPDATE of its own.
+    """
     if obj.version != version:
         raise Conflict(
             "STALE_DATA",
             "Kayıt başka bir kullanıcı tarafından değiştirilmiş. Lütfen yenileyip tekrar deneyin.",
             details={"current_version": obj.version},
         )
+    if isinstance(obj, TimestampMixin):
+        obj.updated_at = utcnow()
 
 
 @event.listens_for(Session, "before_flush")
@@ -115,7 +123,8 @@ def _stamp_users(session: Session, flush_context: UOWTransaction, instances: Any
             if obj.updated_by_id is None:
                 obj.updated_by_id = user_id
     for obj in session.dirty:
-        if isinstance(obj, TimestampMixin) and session.is_modified(obj):
+        # Column changes only: a parent whose collection merely gained a child is not rewritten.
+        if isinstance(obj, TimestampMixin) and session.is_modified(obj, include_collections=False):
             obj.updated_by_id = user_id
 
 

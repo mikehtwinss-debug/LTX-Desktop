@@ -14,7 +14,11 @@ interface AppliedField {
 }
 
 /** The slice of an Ant Design form instance that `applyApiErrorsToForm` relies on. */
-function fakeForm(registered: (string | number)[][]): { form: FormInstance; applied: AppliedField[]; scrolledTo: unknown[] } {
+function fakeForm(registered: (string | number)[][]): {
+  form: FormInstance;
+  applied: AppliedField[];
+  scrolledTo: unknown[];
+} {
   const applied: AppliedField[] = [];
   const scrolledTo: unknown[] = [];
   const form = {
@@ -26,37 +30,22 @@ function fakeForm(registered: (string | number)[][]): { form: FormInstance; appl
 }
 
 describe('fieldIssues', () => {
-  it('reads a map of dotted paths, with one or several messages', () => {
-    const issues = fieldIssues(validationError({ name: 'Ad zorunludur', 'lines.0.quantity': ['Geçersiz miktar', 'Çok büyük'] }));
-    expect(issues).toEqual([
-      { path: ['name'], message: 'Ad zorunludur' },
-      { path: ['lines', 0, 'quantity'], message: 'Geçersiz miktar' },
-      { path: ['lines', 0, 'quantity'], message: 'Çok büyük' },
-    ]);
-  });
-
-  it('reads a list of field/message objects and Pydantic locations', () => {
+  it('reads the map of dotted paths, turning numeric segments into row indexes', () => {
     const issues = fieldIssues(
-      validationError([
-        { field: 'vendor_id', message: 'Satıcı seçilmelidir' },
-        { loc: ['body', 'lines', 2, 'unit_price'], msg: 'Fiyat girilmelidir' },
-      ]),
+      validationError({ name: 'Bu alan zorunludur', 'lines.0.quantity': '0 değerinden büyük olmalıdır' }),
     );
     expect(issues).toEqual([
-      { path: ['vendor_id'], message: 'Satıcı seçilmelidir' },
-      { path: ['lines', 2, 'unit_price'], message: 'Fiyat girilmelidir' },
+      { path: ['name'], message: 'Bu alan zorunludur' },
+      { path: ['lines', 0, 'quantity'], message: '0 değerinden büyük olmalıdır' },
     ]);
   });
 
-  it('keeps a field that is itself called body', () => {
-    expect(fieldIssues(validationError({ body: 'Metin zorunludur' }))).toEqual([{ path: ['body'], message: 'Metin zorunludur' }]);
-  });
-
-  it('is empty for errors without field details', () => {
+  it('is empty for errors without usable field details', () => {
     expect(fieldIssues(new ApiError(400, 'PERIOD_CLOSED', 'Dönem kapalı.'))).toEqual([]);
+    expect(fieldIssues(new ApiError(409, 'DUPLICATE', 'm', { constraint: 'uq_vendor_code' }))).toEqual([]);
     expect(fieldIssues(new ApiError(422, 'VALIDATION_ERROR', 'm', { fields: 'oops' }))).toEqual([]);
+    expect(fieldIssues(validationError({ name: 42, code: '' }))).toEqual([]);
     expect(fieldIssues(new Error('x'))).toEqual([]);
-    expect(fieldIssues(validationError({ name: 42, code: [null, ''] }))).toEqual([]);
   });
 });
 
@@ -77,7 +66,10 @@ describe('applyApiErrorsToForm', () => {
 
   it('attaches line errors to the field holding the lines, with the row number', () => {
     const { form, applied } = fakeForm([['vendor_id'], ['lines']]);
-    applyApiErrorsToForm(form, validationError({ 'lines.1.quantity': 'Miktar sıfırdan büyük olmalıdır', lines: 'En az bir satır girin' }));
+    applyApiErrorsToForm(
+      form,
+      validationError({ 'lines.1.quantity': 'Miktar sıfırdan büyük olmalıdır', lines: 'En az bir satır girin' }),
+    );
     expect(applied).toEqual([
       { name: ['lines'], errors: ['2. satır: Miktar sıfırdan büyük olmalıdır', 'En az bir satır girin'] },
     ]);
@@ -106,9 +98,9 @@ describe('applyApiErrorsToForm', () => {
 });
 
 describe('lineErrorsFromApi', () => {
-  it('collects cell errors by row and column, first message wins', () => {
+  it('collects the cell errors of one line grid by row and column', () => {
     const error = validationError({
-      'lines.0.quantity': ['Geçersiz miktar', 'İkinci mesaj'],
+      'lines.0.quantity': 'Geçersiz miktar',
       'lines.2.material_id': 'Malzeme seçilmelidir',
       'other.0.quantity': 'Başka bir tablo',
       lines: 'En az bir satır girin',

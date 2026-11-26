@@ -72,12 +72,18 @@ export function collectFeatures(modules: Record<string, ModuleExports>): Feature
     }
     return exports.default;
   });
-  assertUnique('feature', features.map((feature) => feature.key));
-  assertUnique('menu', features.flatMap((feature) => feature.menu.map((entry) => entry.key)));
+  assertUnique(
+    'feature',
+    features.map((feature) => feature.key),
+  );
+  assertUnique(
+    'menu',
+    features.flatMap((feature) => feature.menu.map((entry) => entry.key)),
+  );
   return features.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-export const features: FeatureModule[] = collectFeatures(
+const features: FeatureModule[] = collectFeatures(
   import.meta.glob<ModuleExports>('../modules/*/index.tsx', { eager: true }),
 );
 

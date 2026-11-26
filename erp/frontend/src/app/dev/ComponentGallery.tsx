@@ -27,7 +27,13 @@ import { mul, pctOf, round, sum } from '@/lib/decimal';
 import type { LineErrors } from '@/lib/forms';
 import { fmtDateTime, fmtMoney, fmtPrice, fmtQty } from '@/lib/format';
 
-import { DEV_OBJECT_ID, DEV_OBJECT_TYPE, installSampleApi, type SampleMaterial, type SampleMaterialType } from './sampleApi';
+import {
+  DEV_OBJECT_ID,
+  DEV_OBJECT_TYPE,
+  installSampleApi,
+  type SampleMaterial,
+  type SampleMaterialType,
+} from './sampleApi';
 
 installSampleApi();
 
@@ -68,8 +74,21 @@ const TABLE_COLUMNS: ServerTableColumn<SampleMaterial>[] = [
     width: 120,
     render: (value, row) => `${fmtQty(value, row.uom_decimals)} ${row.uom}`,
   },
-  { dataIndex: 'price', title: 'Birim fiyat', align: 'right', sortable: true, width: 130, render: (value) => fmtPrice(value) },
-  { key: 'value', title: 'Stok değeri', align: 'right', width: 140, render: (row) => fmtMoney(mul(row.stock_qty, row.price), 'TRY') },
+  {
+    dataIndex: 'price',
+    title: 'Birim fiyat',
+    align: 'right',
+    sortable: true,
+    width: 130,
+    render: (value) => fmtPrice(value),
+  },
+  {
+    key: 'value',
+    title: 'Stok değeri',
+    align: 'right',
+    width: 140,
+    render: (row) => fmtMoney(mul(row.stock_qty, row.price), 'TRY'),
+  },
   { dataIndex: 'is_active', title: 'Aktif', width: 70, render: (value) => (value ? 'Evet' : 'Hayır') },
   { dataIndex: 'created_at', title: 'Oluşturulma', sortable: true, width: 140, render: (value) => fmtDateTime(value) },
 ];
@@ -84,7 +103,7 @@ const TABLE_FILTERS: ServerTableFilter[] = [
   },
   { type: 'boolean', name: 'is_active', label: 'Aktif' },
   { type: 'text', name: 'code', label: 'Kod içerir' },
-  { type: 'dateRange', name: 'created_from', toName: 'created_to', label: 'Oluşturulma' },
+  { type: 'dateRange', name: 'created_at', label: 'Oluşturulma' },
 ];
 
 interface SampleLine {
@@ -365,11 +384,12 @@ export function Component(): ReactNode {
         <Section title="LinesEditor">
           <Flex gap={16} align="center" style={{ marginBottom: 8 }}>
             <span>
-              <Switch size="small" checked={linesDisabled} onChange={setLinesDisabled} aria-label="Salt okunur" /> Salt okunur
+              <Switch size="small" checked={linesDisabled} onChange={setLinesDisabled} aria-label="Salt okunur" /> Salt
+              okunur
             </span>
             <span>
-              <Switch size="small" checked={showLineErrors} onChange={setShowLineErrors} aria-label="Hata örneği" /> Hata
-              örneği
+              <Switch size="small" checked={showLineErrors} onChange={setShowLineErrors} aria-label="Hata örneği" />{' '}
+              Hata örneği
             </span>
           </Flex>
           <Form<LinesForm> form={linesForm} name="lines" initialValues={{ lines: INITIAL_LINES }}>

@@ -14,7 +14,10 @@ export function toEditText(value: string | null | undefined, decimals: number): 
  */
 export function sanitizeDecimalText(raw: string, decimals: number, allowNegative: boolean): string {
   const negative = allowNegative && /^\s*[-−]/.test(raw);
-  const [integer = '', ...rest] = raw.replace(/\./g, ',').replace(/[^\d,]/g, '').split(',');
+  const [integer = '', ...rest] = raw
+    .replace(/\./g, ',')
+    .replace(/[^\d,]/g, '')
+    .split(',');
   const hasFraction = rest.length > 0 && decimals > 0;
   return `${negative ? '-' : ''}${integer}${hasFraction ? `,${rest.join('').slice(0, decimals)}` : ''}`;
 }

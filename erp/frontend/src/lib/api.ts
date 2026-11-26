@@ -93,7 +93,9 @@ export type QueryValue = string | number | boolean | null | undefined | readonly
 export type QueryParams = Record<string, QueryValue>;
 
 /** Drops empty values so that optional filters never reach the server as `field=`. */
-export function cleanParams(params: QueryParams): Record<string, string | number | boolean | readonly (string | number)[]> {
+export function cleanParams(
+  params: QueryParams,
+): Record<string, string | number | boolean | readonly (string | number)[]> {
   const cleaned: Record<string, string | number | boolean | readonly (string | number)[]> = {};
   for (const [key, value] of Object.entries(params)) {
     if (value === null || value === undefined || value === '') {
@@ -196,8 +198,9 @@ export async function update<T>(endpoint: string, id: EntityId, payload: unknown
   return response.data;
 }
 
-export async function remove(endpoint: string, id: EntityId): Promise<void> {
-  await api.delete(`${endpoint}/${id}`);
+export async function remove<T = void>(endpoint: string, id: EntityId): Promise<T> {
+  const response = await api.delete<T>(`${endpoint}/${id}`);
+  return response.data;
 }
 
 /** Extracts the filename from a `Content-Disposition` header (RFC 5987 `filename*` preferred). */

@@ -33,12 +33,14 @@ const ME_KEY = ['auth', 'me'] as const;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const COMPANY_REJECTED = new Set(['COMPANY_ACCESS_DENIED', 'INVALID_COMPANY']);
+
 async function fetchMe(signal: AbortSignal): Promise<Me> {
   try {
     return await apiGet<Me>('/auth/me', undefined, signal);
   } catch (error) {
-    // The remembered company may no longer be open to this user: retry in the default company.
-    if (error instanceof ApiError && (error.status === 403 || error.status === 404) && getCompanyId() !== null) {
+    // The remembered company is no longer open to this user: fall back to the default company.
+    if (error instanceof ApiError && COMPANY_REJECTED.has(error.code) && getCompanyId() !== null) {
       setCompanyId(null);
       return apiGet<Me>('/auth/me', undefined, signal);
     }

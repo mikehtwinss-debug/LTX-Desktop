@@ -16,7 +16,9 @@ describe('readTableState', () => {
   });
 
   it('reads paging, sorting, search and declared filters', () => {
-    const search = new URLSearchParams('page=3&page_size=100&sort=-order_date&q=sac&status=DRAFT&status=APPROVED&vendor_id=7');
+    const search = new URLSearchParams(
+      'page=3&page_size=100&sort=-order_date&q=sac&status=DRAFT&status=APPROVED&vendor_id=7',
+    );
     expect(readTableState(search, config)).toEqual({
       page: 3,
       pageSize: 100,
@@ -46,7 +48,13 @@ describe('writeTableState', () => {
   });
 
   it('writes the state and round-trips through readTableState', () => {
-    const state = { page: 2, pageSize: 20, sort: 'number', q: 'çelik sac', filters: { status: ['DRAFT', 'APPROVED'], vendor_id: '7' } };
+    const state = {
+      page: 2,
+      pageSize: 20,
+      sort: 'number',
+      q: 'çelik sac',
+      filters: { status: ['DRAFT', 'APPROVED'], vendor_id: '7' },
+    };
     const written = writeTableState(new URLSearchParams(), state, config);
     expect(written.getAll('status')).toEqual(['DRAFT', 'APPROVED']);
     expect(written.get('q')).toBe('çelik sac');

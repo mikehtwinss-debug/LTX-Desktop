@@ -12,9 +12,6 @@ export function bindMessage(api: MessageInstance): void {
 }
 
 export const notify = {
-  success(content: string): void {
-    void instance?.success(content);
-  },
   /** A `key` collapses repeated messages (e.g. several parallel requests failing the same way). */
   warning(content: string, key?: string): void {
     void instance?.warning({ content, key });

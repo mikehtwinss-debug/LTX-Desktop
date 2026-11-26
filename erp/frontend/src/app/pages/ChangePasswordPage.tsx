@@ -3,7 +3,7 @@ import { Alert, App, Button, Card, Flex, Form, Input, theme, Typography } from '
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { ApiError, apiPost } from '@/lib/api';
+import { apiPost } from '@/lib/api';
 import { applyApiErrorsToForm } from '@/lib/forms';
 
 import { useAuth, useMe } from '../AuthProvider';
@@ -30,15 +30,12 @@ export function ChangePasswordPage(): ReactNode {
         new_password: values.new_password,
       }),
     onSuccess: async () => {
-      void message.success('Şifreniz değiştirildi');
+      void message.success('Parolanız değiştirildi');
       await reloadMe();
       navigate(PATHS.home, { replace: true });
     },
     onError: (error) => {
       applyApiErrorsToForm(form, error);
-      if (error instanceof ApiError && error.code === 'INVALID_CREDENTIALS') {
-        form.setFields([{ name: 'current_password', errors: [error.message] }]);
-      }
     },
   });
 
@@ -46,34 +43,39 @@ export function ChangePasswordPage(): ReactNode {
     <Flex align="center" justify="center" style={{ minHeight: '100vh', padding: 16, background: token.colorBgLayout }}>
       <Card style={{ width: 400 }}>
         <Typography.Title level={4} style={{ marginTop: 0 }}>
-          Şifre değiştir
+          Parola değiştir
         </Typography.Title>
         {me.must_change_password && (
           <Alert
             type="info"
             showIcon
-            message="Devam edebilmek için şifrenizi değiştirmeniz gerekiyor."
+            message="Devam edebilmek için parolanızı değiştirmeniz gerekiyor."
             style={{ marginBottom: 16 }}
           />
         )}
-        <Form<PasswordForm> form={form} layout="vertical" requiredMark={false} onFinish={(values) => change.mutate(values)}>
+        <Form<PasswordForm>
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={(values) => change.mutate(values)}
+        >
           <Form.Item
             name="current_password"
-            label="Mevcut şifre"
-            rules={[{ required: true, message: 'Mevcut şifrenizi girin' }]}
+            label="Mevcut parola"
+            rules={[{ required: true, message: 'Mevcut parolanızı girin' }]}
           >
             <Input.Password autoFocus autoComplete="current-password" />
           </Form.Item>
           <Form.Item
             name="new_password"
-            label="Yeni şifre"
+            label="Yeni parola"
             dependencies={['current_password']}
             rules={[
-              { required: true, message: 'Yeni şifrenizi girin' },
+              { required: true, message: 'Yeni parolanızı girin' },
               ({ getFieldValue }) => ({
                 validator: (_, value: string | undefined) =>
                   value && value === getFieldValue('current_password')
-                    ? Promise.reject(new Error('Yeni şifre mevcut şifreden farklı olmalı'))
+                    ? Promise.reject(new Error('Yeni parola mevcut paroladan farklı olmalıdır'))
                     : Promise.resolve(),
               }),
             ]}
@@ -82,15 +84,15 @@ export function ChangePasswordPage(): ReactNode {
           </Form.Item>
           <Form.Item
             name="confirm_password"
-            label="Yeni şifre (tekrar)"
+            label="Yeni parola (tekrar)"
             dependencies={['new_password']}
             rules={[
-              { required: true, message: 'Yeni şifrenizi tekrar girin' },
+              { required: true, message: 'Yeni parolanızı tekrar girin' },
               ({ getFieldValue }) => ({
                 validator: (_, value: string | undefined) =>
                   !value || value === getFieldValue('new_password')
                     ? Promise.resolve()
-                    : Promise.reject(new Error('Şifreler birbiriyle aynı değil')),
+                    : Promise.reject(new Error('Parolalar birbiriyle aynı değil')),
               }),
             ]}
           >
@@ -103,7 +105,7 @@ export function ChangePasswordPage(): ReactNode {
               <Button onClick={() => navigate(-1)}>Vazgeç</Button>
             )}
             <Button type="primary" htmlType="submit" loading={change.isPending}>
-              Şifreyi değiştir
+              Parolayı değiştir
             </Button>
           </Flex>
         </Form>

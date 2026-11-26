@@ -20,8 +20,8 @@ export interface Me {
   is_superuser: boolean;
   must_change_password: boolean;
   default_company_id: number | null;
-  /** The company the request ran in (`X-Company-Id`, or the user's default). */
-  company_id: number;
+  /** The company the request ran in (`X-Company-Id`, or the user's default); `null` for a user without any company. */
+  company_id: number | null;
   companies: CompanyRef[];
   /** Permission keys the user holds in the active company. */
   permissions: string[];

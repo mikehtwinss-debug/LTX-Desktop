@@ -331,7 +331,6 @@ def create_user(ctx: UserContext, data: UserCreate) -> User:
 
 def update_user(ctx: UserContext, user_id: int, data: UserUpdate) -> User:
     user = get_user(ctx, user_id, lock=True)
-    assert_version(user, data.version)
     _guard_managed_account(ctx, user)
     if data.is_superuser != user.is_superuser:
         _require_superuser(ctx)
@@ -341,6 +340,7 @@ def update_user(ctx: UserContext, user_id: int, data: UserUpdate) -> User:
         _guard_last_superuser(ctx, user)
     _check_default_company(ctx, data.default_company_id)
 
+    assert_version(user, data.version)
     user.full_name = data.full_name
     user.email = data.email
     user.is_active = data.is_active

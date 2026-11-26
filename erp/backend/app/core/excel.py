@@ -154,7 +154,12 @@ class ExcelBook:
                 raise ValueError(f"Row has {len(values)} values for {len(columns)} columns")
             last_data_row += 1
             for index, (value, column) in enumerate(zip(values, columns, strict=True), start=1):
-                self._format_cell(sheet.cell(row=last_data_row, column=index, value=value), column)
+                cell = sheet.cell(row=last_data_row, column=index, value=value)
+                if cell.data_type == "f":
+                    # Data is never a formula: text such as a partner name starting with "=" must not
+                    # be evaluated by Excel (formula injection).
+                    cell.data_type = "s"
+                self._format_cell(cell, column)
 
         last_letter = get_column_letter(len(columns))
         sheet.auto_filter.ref = f"A{header_row}:{last_letter}{last_data_row}"
