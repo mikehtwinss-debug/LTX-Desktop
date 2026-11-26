@@ -1,0 +1,29 @@
+/* Spreadsheet-like line grid: editors fill their cells, the focused cell carries the outline. */
+.erp-lines .ant-table-tbody > tr > td.erp-lines-cell {
+  padding: 0;
+}
+
+.erp-lines .ant-table-tbody > tr > td.erp-lines-cell-error {
+  background: var(--erp-lines-error-bg);
+  box-shadow: inset 0 0 0 1px var(--erp-lines-error);
+}
+
+.erp-lines .ant-table-tbody > tr > td.erp-lines-cell:focus-within {
+  box-shadow: inset 0 0 0 2px var(--erp-lines-focus);
+}
+
+.erp-lines .erp-lines-text {
+  padding: 4px 8px;
+  min-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+/* A selected entity in a read-only cell must read like the plain text of its neighbours. */
+.erp-lines td.erp-lines-cell .ant-select.ant-select-disabled:not(.ant-select-customize-input) .ant-select-selector {
+  color: inherit;
+  cursor: default;
+}
+
+.erp-lines td.erp-lines-cell .ant-select-disabled .ant-select-arrow {
+  display: none;
+}

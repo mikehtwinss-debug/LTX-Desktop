@@ -1,0 +1,90 @@
+{
+  "currencies": [
+    {"code": "TRY", "name": "Türk Lirası", "symbol": "₺"},
+    {"code": "USD", "name": "ABD Doları", "symbol": "$"},
+    {"code": "EUR", "name": "Euro", "symbol": "€"},
+    {"code": "GBP", "name": "İngiliz Sterlini", "symbol": "£"}
+  ],
+  "units": [
+    {"code": "ADET", "name": "Adet", "decimals": 0, "unece_code": "C62"},
+    {"code": "KG", "name": "Kilogram", "decimals": 3, "unece_code": "KGM"},
+    {"code": "GR", "name": "Gram", "decimals": 3, "unece_code": "GRM"},
+    {"code": "TON", "name": "Ton", "decimals": 3, "unece_code": "TNE"},
+    {"code": "LT", "name": "Litre", "decimals": 3, "unece_code": "LTR"},
+    {"code": "M", "name": "Metre", "decimals": 3, "unece_code": "MTR"},
+    {"code": "M2", "name": "Metrekare", "decimals": 3, "unece_code": "MTK"},
+    {"code": "M3", "name": "Metreküp", "decimals": 3, "unece_code": "MTQ"},
+    {"code": "PAKET", "name": "Paket", "decimals": 0, "unece_code": "PA"},
+    {"code": "KOLI", "name": "Koli", "decimals": 0, "unece_code": "CT"},
+    {"code": "KUTU", "name": "Kutu", "decimals": 0, "unece_code": "BX"},
+    {"code": "SET", "name": "Set", "decimals": 0, "unece_code": "SET"},
+    {"code": "SAAT", "name": "Saat", "decimals": 2, "unece_code": "HUR"},
+    {"code": "GUN", "name": "Gün", "decimals": 2, "unece_code": "DAY"}
+  ],
+  "roles": [
+    {
+      "code": "admin",
+      "name": "Sistem Yöneticisi",
+      "description": "Tüm modüllerde tam yetki.",
+      "grant": ["*"],
+      "deny": []
+    },
+    {
+      "code": "muhasebe",
+      "name": "Muhasebe",
+      "description": "Finansal muhasebe işlemleri; malzeme yönetiminde yalnızca görüntüleme.",
+      "grant": ["fi.*", "co.*", "mm.*.view", "org.*.view"],
+      "deny": []
+    },
+    {
+      "code": "satinalma",
+      "name": "Satınalma",
+      "description": "Talep, teklif, mukayese ve sipariş işlemleri; onay yetkisi yoktur.",
+      "grant": [
+        "mm.pr.*",
+        "mm.rfq.*",
+        "mm.quotation.*",
+        "mm.comparison.*",
+        "mm.po.*",
+        "mm.inforecord.*",
+        "mm.*.view",
+        "fi.vendor.view",
+        "fi.payment_term.view",
+        "co.*.view",
+        "org.*.view"
+      ],
+      "deny": ["*.approve", "*.release"]
+    },
+    {
+      "code": "depo",
+      "name": "Depo",
+      "description": "Stok hareketleri, parti ve sayım işlemleri.",
+      "grant": [
+        "mm.matdoc.*",
+        "mm.stock.*",
+        "mm.batch.*",
+        "mm.pinv.*",
+        "mm.gr.*",
+        "mm.material.view",
+        "mm.po.view",
+        "co.*.view",
+        "org.*.view"
+      ],
+      "deny": ["*.approve", "*.release"]
+    },
+    {
+      "code": "yonetici",
+      "name": "Yönetici (Onaycı)",
+      "description": "Tüm kayıtları görüntüleme, onay ve serbest bırakma yetkisi.",
+      "grant": ["*.view", "*.approve", "*.release"],
+      "deny": []
+    },
+    {
+      "code": "izleyici",
+      "name": "İzleyici",
+      "description": "Tüm kayıtlarda yalnızca görüntüleme.",
+      "grant": ["*.view"],
+      "deny": []
+    }
+  ]
+}
